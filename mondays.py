@@ -2,118 +2,74 @@ import curses
 import time
 import random
 import locale
+import os
 
 
 def lamentOnTheNatureOfMondaysAndLasagne():
-    pass
-    
+    # Set locale - solves unicode issues
+    locale.setlocale(locale.LC_ALL, "")
 
-def drawGarfieldImage():
-    pass
-    
+    with CursesDrawer() as drawer:
+        drawGarfieldImage(drawer)
 
-def drawTextBubble():
-    pass
-
-
-def drawStr(stdscr, txt, start_ords={'x':0,'y':0}, color=None):
-    screenHeight, screenWidth = stdscr.getmaxyx()
-
-    imgLines = txt.split("\n")
-
-    imageHeight = len(imgLines)
-    imageWidth = max([len(i) for i in imgLines])
-
-    # Ensure we don't print more lines than we can fit in the terminal
-    for i in range(min(imageHeight + start_ords['y'], screenHeight) - start_ords['y']):
-        line = imgLines[i]
+        # Now for the text bubble overlay...
+        overlay = getSnarkyBubbleText()
+        drawTextOverlay(drawer, overlay)
         
-        # Only get enough of the line so we don't draw past the edge
-        line = line[:(screenWidth - start_ords['x'])].encode('utf-8')
-
-        if color is not None:
-            stdscr.addstr(i + start_ords['y'], start_ords['x'], line, color)
-        else:
-            stdscr.addstr(i + start_ords['y'], start_ords['x'], line)
-            
-
-
-
-# Set locale - solves unicode issues
-locale.setlocale(locale.LC_ALL,"")
-
-
-# Get our Garfield ascii image
-with open("garfield.txt") as garfieldFile:
-    strimg = garfieldFile.read()
-
-
-# Where the overlay should be positioned so the bottom left of the bubble lines
-#  up with Garfield's mouth
-base_overlay_ords = { 'x': 64, 'y': 18 }
-
-quotes = [
-    "MOAR LASAGNE!",
-    "*sigh* mondays...",
-    "sfgtdsegfuasrhgisudfghsiodufg\nhsyud\n\n\n\n\n\nfgasuydgfausydfgsuadyfgusadyghauhefiuhfiuehfwieufhwiuehfwfuadergergertg erg erge rge rg\n\ne rger ger g ergergergsfgusadfgsiaufgs,\n\n\n\n\n\n\nfuswagdfiuysgafusyfdgydf saghudsfhg sudyfhg sduifhgs iudfg\n sufigashgdiufasdf",
-    "Mondays monkey works\nfor the weekends"
-]
-
-msg = random.choice(quotes)
-# msg = quotes[2]
-
-msg_lines = msg.split("\n")
-longest_line = max([len(i) for i in msg_lines])
-
-
-bubble = r" /" + (u"\xaf" * (longest_line + 10)) + "\ " + "\n"
-
-# Add all lines but the last
-for line in msg_lines[:-1]:
-    len_diff = longest_line - len(line)
-    bubble += " |     " + line + (" " * len_diff) + "     |" + "\n"
+        # Now wait
+        os.system('read -s -n 1')
     
-    # Each line pushes the bottom of the bubble down so move it up
-    base_overlay_ords['y'] -= 1
+    
+def getSnarkyBubbleText():
+    quotes = [
+        "Good times are ahead!\nOr behind.\nBecause they sure aren't here.",
+        "I hate Mondays.",
+        "If you want to appear smarter,\nhang around someone stupider.",
+        "Would you be willing to lead a \nparade in celebration of the lazy life?\nIf the answer is yes...\nyou're all wrong for lazy week.",
+        "His I.Q. is so low you can't test it.\nYou have to dig for it."
+    ]
 
-# Add the last line
-len_diff = longest_line - len(msg_lines[-1])
-bubble += " |     " + msg_lines[-1] + (" " * len_diff) + "     |" + "\n"
+    msg = random.choice(quotes)
 
-bubble += "/______" + ("_" * longest_line) + "_____/"
-
-
-overlay = bubble
-
-
-
-
-
+    msg_lines = msg.split("\n")
+    longest_line = max([len(i) for i in msg_lines])
 
 
+    bubble = r" /" + (u"\xaf" * (longest_line + 10)) + "\ " + "\n"
+
+    # Add all lines but the last
+    for line in msg_lines[:-1]:
+        len_diff = longest_line - len(line)
+        bubble += " |     " + line + (" " * len_diff) + "     |" + "\n"
+
+    # Add the last line
+    len_diff = longest_line - len(msg_lines[-1])
+    bubble += " |     " + msg_lines[-1] + (" " * len_diff) + "     |" + "\n"
+
+    bubble += "/______" + ("_" * longest_line) + "_____/"
+
+    return bubble
+    
+
+def drawGarfieldImage(drawer):
+    # Get our Garfield ascii image and draw it
+    with open("garfield.txt") as garfieldFile:
+        strimg = garfieldFile.read()
+
+    drawer.drawStr(strimg, {'x': 4, 'y': 0})
 
 
+def drawTextOverlay(drawer, overlay):
+    screenHeight, screenWidth = drawer.getScreenHeightWidth()
 
-
-stdscr = curses.initscr()
-try:
-    curses.noecho()
-
-    curses.start_color()
-    curses.use_default_colors()
-
-
-    for i in range(0, curses.COLORS):
-        curses.init_pair(i + 1, i, -1)
-
-    screenHeight, screenWidth = stdscr.getmaxyx()
-
-    # Draw the Garfield image
-    drawStr(stdscr, strimg, {'x': 4, 'y': 0})
-
-    # Now for the text bubble overlay...
-    # Calc the coordinates of where we should display it
-    overlay_ords = base_overlay_ords;
+    # Where the overlay should be positioned so the bottom left of the bubble lines
+    #  up with Garfield's mouth
+    overlay_ords = { 'x': 64, 'y': 18 }
+    
+    # The default overlay ords assume there is exactly 3 lines, if there's more then move the message up
+    overlay_lines = len(overlay.split("\n")) 
+    if overlay_lines > 3:
+        overlay_ords['y'] -= overlay_lines - 3 
     
     # If the msg is clipping off to the right, move it to the left
     longest_line_length = len(max(overlay.split("\n"), key=len))
@@ -129,13 +85,64 @@ try:
     if overlay_ords['y'] < 0:
         overlay_ords['y'] = 0
     
-    # and draw it
-    drawStr(stdscr, overlay, overlay_ords, curses.color_pair(2))
+    drawer.drawStr(overlay, overlay_ords, curses.color_pair(2))
 
-    stdscr.refresh()
+            
 
-    time.sleep(25)
+class CursesDrawer:
+    def __init__(self):
+        self.stdscr = curses.initscr()
 
-finally:
-    curses.echo()
-    curses.endwin()
+        try:
+            curses.noecho()
+
+            curses.curs_set(0)
+
+            curses.start_color()
+            curses.use_default_colors()
+
+            for i in range(0, curses.COLORS):
+                curses.init_pair(i + 1, i, -1)
+
+        except:
+            self.finish();
+
+    def finish(self):
+        curses.echo()
+        curses.endwin() 
+        
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, type, value, traceback):
+        self.finish();    
+        
+    def drawStr(self, txt, start_ords={'x':0,'y':0}, color=None):
+        screenHeight, screenWidth = self.getScreenHeightWidth()
+
+        imgLines = txt.split("\n")
+
+        imageHeight = len(imgLines)
+        imageWidth = max([len(i) for i in imgLines])
+
+        # Ensure we don't print more lines than we can fit in the terminal
+        for i in range(min(imageHeight + start_ords['y'], screenHeight) - start_ords['y']):
+            line = imgLines[i]
+            
+            # Only get enough of the line so we don't draw past the edge
+            line = line[:(screenWidth - start_ords['x'])].encode('utf-8')
+
+            if color is not None:
+                self.stdscr.addstr(i + start_ords['y'], start_ords['x'], line, color)
+            else:
+                self.stdscr.addstr(i + start_ords['y'], start_ords['x'], line)
+        
+        self.stdscr.refresh()
+        
+    def getScreenHeightWidth(self):
+        return self.stdscr.getmaxyx()
+        
+        
+        
+if __name__ == "__main__":
+    lamentOnTheNatureOfMondaysAndLasagne()
