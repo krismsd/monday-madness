@@ -3,9 +3,10 @@ import time
 import random
 import locale
 import os
+import argparse
 
 
-def lamentOnTheNatureOfMondaysAndLasagne():
+def lamentOnTheNatureOfMondaysAndLasagne(msg=None):
     # Set locale - solves unicode issues
     locale.setlocale(locale.LC_ALL, "")
 
@@ -13,14 +14,14 @@ def lamentOnTheNatureOfMondaysAndLasagne():
         drawGarfieldImage(drawer)
 
         # Now for the text bubble overlay...
-        overlay = getSnarkyBubbleText()
+        overlay = getSnarkyBubbleText(msg)
         drawTextOverlay(drawer, overlay)
         
         # Now wait
         os.system('read -s -n 1')
     
     
-def getSnarkyBubbleText():
+def getSnarkyBubbleText(msg=None):
     quotes = [
         "Good times are ahead!\nOr behind.\nBecause they sure aren't here.",
         "I hate Mondays.",
@@ -29,7 +30,8 @@ def getSnarkyBubbleText():
         "His I.Q. is so low you can't test it.\nYou have to dig for it."
     ]
 
-    msg = random.choice(quotes)
+    if msg is None:
+        msg = random.choice(quotes)
 
     msg_lines = msg.split("\n")
     longest_line = max([len(i) for i in msg_lines])
@@ -79,7 +81,6 @@ def drawTextOverlay(drawer, overlay):
     # If we've pushed it too far to the left, just sit it at x=0
     if overlay_ords['x'] < 0:
         overlay_ords['x'] = 0
-        # exit("Couldn't fit message in terminal, no lasagne for u :(")
     
     # If the msg will is too far up, move it down
     if overlay_ords['y'] < 0:
@@ -89,6 +90,8 @@ def drawTextOverlay(drawer, overlay):
 
             
 
+# This is just a simple wrapper to manage creating and destroying
+# the curses window stuff. Best to call it using the `with` syntax. 
 class CursesDrawer:
     def __init__(self):
         self.stdscr = curses.initscr()
@@ -145,4 +148,10 @@ class CursesDrawer:
         
         
 if __name__ == "__main__":
-    lamentOnTheNatureOfMondaysAndLasagne()
+    # Read in arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--message", help="message to be shown")
+    args = parser.parse_args()
+
+    # Do the showing of the message
+    lamentOnTheNatureOfMondaysAndLasagne(args.message)
