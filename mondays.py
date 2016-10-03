@@ -14,14 +14,16 @@ def lamentOnTheNatureOfMondaysAndLasagne(msg=None):
         drawGarfieldImage(drawer)
 
         # Now for the text bubble overlay...
-        overlay = getSnarkyBubbleText(msg)
+        msg = msg or getRandomSnarkyQuote()
+        
+        overlay = buildSnarkyTextOverlay(msg)
         drawTextOverlay(drawer, overlay)
         
         # Now wait
         os.system('read -s -n 1')
     
     
-def getSnarkyBubbleText(msg=None):
+def getRandomSnarkyQuote():
     quotes = [
         "Good times are ahead!\nOr behind.\nBecause they sure aren't here.",
         "I hate Mondays.",
@@ -30,23 +32,20 @@ def getSnarkyBubbleText(msg=None):
         "His I.Q. is so low you can't test it.\nYou have to dig for it."
     ]
 
-    if msg is None:
-        msg = random.choice(quotes)
-
+    return random.choice(quotes)
+    
+    
+def buildSnarkyTextOverlay(msg):
     msg_lines = msg.split("\n")
     longest_line = max([len(i) for i in msg_lines])
 
 
     bubble = r" /" + (u"\xaf" * (longest_line + 10)) + "\ " + "\n"
 
-    # Add all lines but the last
-    for line in msg_lines[:-1]:
+    # Add the lines
+    for line in msg_lines:
         len_diff = longest_line - len(line)
         bubble += " |     " + line + (" " * len_diff) + "     |" + "\n"
-
-    # Add the last line
-    len_diff = longest_line - len(msg_lines[-1])
-    bubble += " |     " + msg_lines[-1] + (" " * len_diff) + "     |" + "\n"
 
     bubble += "/______" + ("_" * longest_line) + "_____/"
 
